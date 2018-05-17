@@ -1,11 +1,12 @@
-This project is me playing around with Playstation 2 development.
+This is a collections of playstation 2 development projects I have been playing around with.
 
-projects are licenced under Academic Free License version 2.0, as described in PS2SDK documentation.
+projects are licenced under Academic Free License version 2.0
+The full license can be found in the LICENSE file
 
-some portions of code are from examples or other projects related to:
-PS2SDK
-GSKIT
-Open PS2 Loader
+Some portions of code are from examples or other projects related to:
+PS2SDK - https://github.com/ps2dev/ps2sdk
+GSKIT - https://github.com/ps2dev/gsKit
+Open PS2 Loader - https://github.com/ifcaro/Open-PS2-Loader
 
-some projects may include incomplete notice of authors, licensing, ect.
-which is generally sumerised in this document.
+Some projects may include incomplete notice of authors, licensing, ect. as this is not a
+product for distribution, just some code I have been playing with.
