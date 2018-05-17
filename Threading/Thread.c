@@ -45,7 +45,7 @@ s32 createThread(void * function, char stack[], void * gp_register, int priority
 	t->func = function;
 	t->stack = stack;
 	t->stack_size = sizeof(stack);
-	t->gp_reg = gp_register;
+	t->gp_reg = (void *) gp_register;
 	t->initial_priority = priority;
 	t->attr = attr;
 	t->option = option;

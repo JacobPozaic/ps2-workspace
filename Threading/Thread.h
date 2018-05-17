@@ -12,10 +12,15 @@
 
 // TODO: find out how aligned works, some thread stacks aligned 64?
 static char default_stack[16*1024] __attribute__((aligned(16)));
-static void * default_gp_reg;
+extern void * _gp; //TODO: figure out what this is
 static s32 default_priority = 50;
 static u32 default_attr = 0x02000000;
 static u32 default_option = 0;
+
+// TODO: find purpose of:
+s32 iWakeupThread(s32 thread_id);
+s32 iRotateThreadReadyQueue(s32 priority);
+s32 iSuspendThread(s32 thread_id);
 
 /**
  * Returns the t_id of the current thread (the one this line of code resides in when called)
@@ -37,6 +42,7 @@ int getThreadStatus(s32 t_id);
 
 /**
  * Sets the priority of a given thread.
+ * A threads priority can be between 0..127 (inclusively)
  */
 s32 setThreadPriority(s32 t_id, s32 priority);
 
@@ -72,7 +78,7 @@ s32 createThread(void * function, char stack[], void * gp_register, s32 priority
 s32 startThread(s32 t_id, void * args);
 
 /**
- * Exits the thread this thread.
+ * Exits this thread.
  * TODO: unsure if this means thread has completed, or release thread so another can be scheduled
  */
 void exitThread(void);
@@ -98,7 +104,10 @@ s32 terminateThread(s32 t_id);
 // Thread scheduling functions
 
 /**
- * TODO: I assume this cycles through the threads with state READY for the scheduler, or maybe it does something to the priority?
+ * Stop executing the current thread and start the next ready thread.
+ * If any threads are the same priority they operate in round-robin.
+ *
+ * NOTE: It is unclear what the priority parameter is for.
  */
 s32 rotateThreadReadyQueue(s32 priority);
 
