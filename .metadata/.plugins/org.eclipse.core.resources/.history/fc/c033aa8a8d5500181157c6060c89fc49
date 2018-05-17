@@ -1,0 +1,12 @@
+#ifndef DEMO1_H_
+#define DEMO1_H_
+
+VECTOR object_position = { 0.00f, 0.00f, 0.00f, 1.00f };
+VECTOR object_rotation = { 0.00f, 0.00f, 0.00f, 1.00f };
+
+VECTOR camera_position = { 0.00f, 0.00f, 200.00f, 1.00f };
+VECTOR camera_rotation = { 0.00f, 0.00f,   0.00f, 1.00f };
+
+control_map con;
+
+#endif /* DEMO1_H_ */

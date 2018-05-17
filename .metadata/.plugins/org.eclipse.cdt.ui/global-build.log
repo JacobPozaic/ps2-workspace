@@ -1,0 +1,13 @@
+Build not configured correctly
+13:54:13 **** Build of configuration Default for project Threading ****
+ all 
+Cannot run program "": Launching failed
+
+Error: Program "" not found in PATH
+PATH=[F:/Program Files/Java/jre1.8.0_172/bin/server;F:/Program Files/Java/jre1.8.0_172/bin;F:/Program Files/Java/jre1.8.0_172/lib/amd64;C:\Program Files (x86)\Common Files\Oracle\Java\javapath;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\dotnet\;F:\Program Files\Git\cmd;F:\Program Files\doxygen\bin;C:\Users\Jacob\AppData\Local\Microsoft\WindowsApps;C:\Users\Jacob\AppData\Local\atom\bin;C:\Users\Jacob\AppData\Local\GitHubDesktop\bin;F:\Program Files\Eclipse IDE\cpp-oxygen\eclipse]
+13:55:13 **** Incremental Build of configuration Default for project Threading ****
+make -k all 
+Cannot run program "make": Launching failed
+
+Error: Program "make" not found in PATH
+PATH=[F:/Program Files/Java/jre1.8.0_172/bin/server;F:/Program Files/Java/jre1.8.0_172/bin;F:/Program Files/Java/jre1.8.0_172/lib/amd64;C:\Program Files (x86)\Common Files\Oracle\Java\javapath;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\dotnet\;F:\Program Files\Git\cmd;F:\Program Files\doxygen\bin;C:\Users\Jacob\AppData\Local\Microsoft\WindowsApps;C:\Users\Jacob\AppData\Local\atom\bin;C:\Users\Jacob\AppData\Local\GitHubDesktop\bin;F:\Program Files\Eclipse IDE\cpp-oxygen\eclipse]

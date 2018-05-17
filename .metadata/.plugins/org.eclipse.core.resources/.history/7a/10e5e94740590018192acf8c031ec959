@@ -1,0 +1,160 @@
+#include <kernel.h>
+#include <tamtypes.h>
+#include <string.h>
+
+#include <Thread.h>
+
+s32 getCurrentThread() {
+	return GetThreadId();
+}
+
+int getThreadStatus(s32 t_id) {
+	return 0; //TODO: implement
+}
+
+void setThreadPriority(s32 t_id, s32 priority) {
+	ChangeThreadPriority(t_id, priority); // returns an s32 (t_id?)
+}
+
+int getThreadStackSize(s32 t_id) {
+	return 0; //TODO: implement
+}
+
+char * getStackContents(s32 t_id) {
+	char temp = 0;
+	return &temp; //TODO: implement
+}
+
+//----------------------------------------------------------------------------------------------------
+// Thread management functions
+
+s32 createThread(void * function) {
+	return createThread(function, default_stack, default_gp_reg, default_priority, default_attr, default_option);
+}
+
+s32 createThread(void * function, int priority) {
+	return createThread(function, default_stack, default_gp_reg, priority, default_attr, default_option);
+}
+
+s32 createThread(void * function, char stack[], int priority) {
+	return createThread(function, stack, default_gp_reg, priority, default_attr, default_option);
+}
+
+s32 createThread(void * function, char stack[], void * gp_register, int priority, u32 attr, u32 option) {
+	ee_thread_t t;
+	t.func = function;
+	t.stack = stack;
+	t.stack_size = sizeof(stack);
+	t.gp_reg = gp_register;
+	t.initial_priority = priority;
+	t.attr = attr;
+	t.option = option;
+	return CreateThread(&t);
+}
+
+s32 startThread(s32 t_id) {
+	return StartThread(t_id, 0);
+}
+
+s32 startThread(s32 t_id, void * args) {
+	return StartThread(t_id, args);
+}
+
+void exitThread() {
+	ExitThread();
+}
+
+void exitDeleteThread() {
+	ExitDeleteThread();
+}
+
+s32 deleteThread(s32 t_id) {
+	DeleteThread(t_id);
+}
+
+s32 terminateThread(s32 t_id) {
+	return TerminateThread(t_id);
+}
+
+//----------------------------------------------------------------------------------------------------
+// Thread scheduling functions
+
+s32 rotateThreadReadyQueue(s32 priority) {
+	return RotateThreadReadyQueue(priority);
+}
+
+/**
+ * Releases a given waiting thread.
+ * A thread that is waiting means that it is ready to be scheduled, just not currently executing.
+ * TODO: no idea what this actually does, possibly drops a waiting thread, or gives it execution?
+ */
+s32  ReleaseWaitThread(s32 thread_id);
+
+/**
+ * TODO: honestly have no idea.
+ */
+s32  ReferThreadStatus(s32 thread_id, ee_thread_status_t *info);
+
+//----------------------------------------------------------------------------------------------------
+// Thread sleep functions
+
+/**
+ * Makes the current thread sleep until WakeupThread is called on its t_id.
+ */
+s32  SleepThread(void);
+
+/**
+ * Wakes up a given thread that is sleeping.
+ */
+s32	 WakeupThread(s32 thread_id);
+
+/**
+ * Cancels a wake-up call on a given thread.
+ *
+ * I assume this functions is to cancel a call to WakeupThread, where later during execution of the
+ * calling thread it is determined that the other thread should not be woken up, before the calling
+ * thread releases its execution slot to the scheduler.
+ */
+s32	 CancelWakeupThread(s32 thread_id);
+
+//----------------------------------------------------------------------------------------------------
+// Thread suspension functions
+// NOTE: Suspend is often deprecated (although not documented here) as it is prone to deadlocks
+// The nature of sleep in PS2's context doesn't seem to add any safer functionality though.
+
+/**
+ * Suspends a given thread.
+ * A suspended thread is paused and will not be rescheduled or continue executing until it is resumed.
+ */
+s32	 SuspendThread(s32 thread_id);
+
+/**
+ * Resumes a given suspended thread.
+ */
+s32	 ResumeThread(s32 thread_id);
+
+//----------------------------------------------------------------------------------------------------
+// TODO: I would like to have some more useful threading functionality.
+// TODO: I can make a sort of thread manager with high priority that can suspend/resume or sleep/wakeup to fake stronger scheduling
+
+void interuptThread(s32 t_id) {
+	// TODO: implement
+}
+
+void join(s32 t_id) {
+	//TODO: implement
+}
+
+void wait(s32 t_id) {
+	//TODO: implement
+}
+
+//---------000000000000000000--------------------
+
+
+
+void interuptThread(s32 t_id);
+void join(s32 t_id);
+void wait(s32 t_id);
+
+#endif /* THREAD_H_ */

@@ -1,0 +1,17 @@
+/*
+ * ControllerObserver.h
+ *
+ *  Created on: May 11, 2018
+ *      Author: Jacob
+ */
+
+#ifndef CONTROLLEROBSERVER_H_
+#define CONTROLLEROBSERVER_H_
+
+class ControllerObserver {
+public:
+	ControllerObserver();
+	virtual ~ControllerObserver();
+};
+
+#endif /* CONTROLLEROBSERVER_H_ */

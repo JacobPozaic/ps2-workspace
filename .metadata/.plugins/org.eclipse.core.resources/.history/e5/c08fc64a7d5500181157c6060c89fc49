@@ -1,0 +1,44 @@
+#include <tamtypes.h>
+#include <kernel.h>
+#include <loadfile.h>
+#include <stdio.h>
+#include <sifrpc.h>
+#include <gs_privileged.h>
+#include <libpad.h>
+#include <string.h>
+
+#ifndef CONTROLLER_H_
+#define CONTROLLER_H_
+
+// DEBUG: debug code enabled if DEBUG = 1
+#define DEBUG 1
+// Use custom IRX files included with the elf file if CUSTOM_IRX = 1
+// otherwise use the PS2SDK default IRX files
+#define CUSTOM_IRX 0
+
+#define DEBUG_BGCOLOR(col) *((u64 *) 0x120000e0) = (u64) (col)
+
+#endif /* CONTROLLER_H_ */
+
+// Values
+static char *padBuf[2];
+static u32 portConnected[2];
+static u32 paddata[2];
+static u32 old_pad[2];
+static u32 new_pad[2];
+static u8 actDirect[2][6] = { {0,0,0,0,0,0}, {0,0,0,0,0,0}};
+static char* padTypeStr[] = { "Unsupported controller", "Mouse", "Nejicon", "Konami Gun", "Digital", "Analog", "Namco Gun", "DualShock"};
+
+u32 port;
+struct padButtonStatus buttons;
+int dualshock[2];
+int acts[2];
+
+// Functions
+static void wait_vsync();
+static void padWait(int port);
+static void padStartAct(int port, int act, int speed);
+static void padStopAct(int port, int act);
+
+void initController();
+void handleInput();

@@ -1,0 +1,19 @@
+/*
+ * ControllerObserver.c
+ *
+ *  Created on: May 11, 2018
+ *      Author: Jacob
+ */
+
+#include "ControllerObserver.h"
+
+ControllerObserver::ControllerObserver()
+{
+	// TODO Auto-generated constructor stub
+
+}
+
+ControllerObserver::~ControllerObserver()
+{
+	// TODO Auto-generated destructor stub
+}

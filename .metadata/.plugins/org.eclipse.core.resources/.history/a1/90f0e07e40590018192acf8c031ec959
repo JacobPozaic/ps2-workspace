@@ -1,0 +1,138 @@
+#include <kernel.h>
+#include <tamtypes.h>
+#include <string.h>
+
+#include <Thread.h>
+
+s32 getCurrentThread() {
+	return GetThreadId();
+}
+
+int getThreadStatus(s32 t_id) {
+	return 0; //TODO: implement
+}
+
+void setThreadPriority(s32 t_id, s32 priority) {
+	ChangeThreadPriority(t_id, priority); // returns an s32 (t_id?)
+}
+
+int getThreadStackSize(s32 t_id) {
+	return 0; //TODO: implement
+}
+
+char * getStackContents(s32 t_id) {
+	char temp = 0;
+	return &temp; //TODO: implement
+}
+
+//----------------------------------------------------------------------------------------------------
+// Thread management functions
+
+s32 createThread(void * function) {
+	return createThread(function, default_stack, default_gp_reg, default_priority, default_attr, default_option);
+}
+
+s32 createThread(void * function, int priority) {
+	return createThread(function, default_stack, default_gp_reg, priority, default_attr, default_option);
+}
+
+s32 createThread(void * function, char stack[], int priority) {
+	return createThread(function, stack, default_gp_reg, priority, default_attr, default_option);
+}
+
+s32 createThread(void * function, char stack[], void * gp_register, int priority, u32 attr, u32 option) {
+	ee_thread_t t;
+	t.func = function;
+	t.stack = stack;
+	t.stack_size = sizeof(stack);
+	t.gp_reg = gp_register;
+	t.initial_priority = priority;
+	t.attr = attr;
+	t.option = option;
+	return CreateThread(&t);
+}
+
+s32 startThread(s32 t_id) {
+	return StartThread(t_id, 0);
+}
+
+s32 startThread(s32 t_id, void * args) {
+	return StartThread(t_id, args);
+}
+
+void exitThread() {
+	ExitThread();
+}
+
+void exitDeleteThread() {
+	ExitDeleteThread();
+}
+
+s32 deleteThread(s32 t_id) {
+	DeleteThread(t_id);
+}
+
+s32 terminateThread(s32 t_id) {
+	return TerminateThread(t_id);
+}
+
+//----------------------------------------------------------------------------------------------------
+// Thread scheduling functions
+
+s32 rotateThreadReadyQueue(s32 priority) {
+	return RotateThreadReadyQueue(priority);
+}
+
+s32 releaseWaitThread(s32 t_id) {
+	return ReleaseWaitThread(t_id);
+}
+
+s32 referThreadStatus(s32 t_id, ee_thread_status_t *info) {
+	return ReferThreadStatus(t_id, *info);
+}
+
+//----------------------------------------------------------------------------------------------------
+// Thread sleep functions
+
+s32 sleepThread() {
+	return SleepThread();
+}
+
+s32	wakeupThread(s32 t_id) {
+	return WakeupThread(t_id);
+}
+
+s32	cancelWakeupThread(s32 t_id) {
+	return CancelWakupThread(t_id);
+}
+
+//----------------------------------------------------------------------------------------------------
+// Thread suspension functions
+// NOTE: Suspend is often deprecated (although not documented here) as it is prone to deadlocks
+// The nature of sleep in PS2's context doesn't seem to add any safer functionality though.
+
+s32	suspendThread(s32 t_id) {
+	return SuspendThread(t_id);
+}
+
+s32	resumeThread(s32 t_id) {
+	return ResumeThread(t_id);
+}
+
+//----------------------------------------------------------------------------------------------------
+// TODO: I would like to have some more useful threading functionality.
+// TODO: I can make a sort of thread manager with high priority that can suspend/resume or sleep/wakeup to fake stronger scheduling
+
+void interuptThread(s32 t_id) {
+	// TODO: implement
+}
+
+void join(s32 t_id) {
+	//TODO: implement
+}
+
+void wait(s32 t_id) {
+	//TODO: implement
+}
+
+#endif /* THREAD_H_ */

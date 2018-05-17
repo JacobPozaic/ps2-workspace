@@ -1,0 +1,62 @@
+#ifndef THREAD_H_
+#define THREAD_H_
+
+/*
+ * NOTE THAT THIS IS FOR EE THREADS
+ *
+int status; // 0x00
+void *func; // 0x04
+void *stack; // 0x08
+int stack_size; // 0x0C
+void *gp_reg; // 0x10 general purpose register?
+int initial_priority; // 0x14
+int current_priority; // 0x18
+u32 attr; // 0x1C
+u32 option; // 0x20 Do not use - officially documented to not work.
+*/
+
+/*
+void ExitThread(void);
+void ExitDeleteThread(void);
+s32  TerminateThread(s32 thread_id);
+s32  RotateThreadReadyQueue(s32 priority);
+s32  ReleaseWaitThread(s32 thread_id);
+s32  ReferThreadStatus(s32 thread_id, ee_thread_status_t *info);
+s32  SleepThread(void);
+s32	 WakeupThread(s32 thread_id);
+s32	 CancelWakeupThread(s32 thread_id);
+s32	 SuspendThread(s32 thread_id);
+s32	 ResumeThread(s32 thread_id);
+ */
+
+// TODO: In non-preemptive once a process start its execution it will terminate only when it ends
+
+static struct thread {
+	ee_thread_t * thread;
+	string name;
+
+	priority
+};
+
+// TODO: find out how aligned works, some thread stacks aligned 64?
+static char default_stack[16*1024] __attribute__((aligned(16)));
+static void * default_gp_reg;
+static s32 default_priority = 50;
+static u32 default_attr = 0x02000000;
+static u32 default_option = 0;
+
+s32 createThread(void * function);
+s32 createThread(void * function, s32 priority);
+s32 createThread(void * function, char stack[], s32 priority);
+s32 createThread(void * function, char stack[], void * gp_register, s32 priority, u32 attr, u32 option);
+
+s32 deleteThread(s32 t_id);
+
+s32 startThread(s32 t_id);
+s32 startThread(s32 t_id, void * args);
+
+void interuptThread(s32 t_id);
+void join(s32 t_id);
+void wait(s32 t_id);
+
+#endif /* THREAD_H_ */
