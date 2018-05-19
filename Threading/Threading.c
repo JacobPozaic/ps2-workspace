@@ -12,17 +12,17 @@ static char thread3_stack[16*1024] __attribute__((aligned(16)));
 static void updateThreadStatus(s32 * threads, int count);
 static char * getThreadStatusAsString(s32 t_id);
 
-static void thread1fun(void);
-static void thread2fun(void);
-static void thread3fun(void);
+static void thread1fun(void * args);
+static void thread2fun(void * args);
+static void thread3fun(void * args);
 
-static int t1_done = 0;
-static int t2_done = 0;
-static int t3_done = 0;
+static int volatile t1_sleep = 0;
+static int volatile t2_sleep = 0;
+static int volatile t3_sleep = 0;
 
-static int t1_notify = 0;
-static int t2_notify = 0;
-static int t3_notify = 0;
+static int volatile t1_done = 0;
+static int volatile t2_done = 0;
+static int volatile t3_done = 0;
 
 int main(int argc, char **argv) {
 	s32 thread[4];
@@ -33,53 +33,65 @@ int main(int argc, char **argv) {
 
 	printf("Creating other threads...\n");
 	// Create some threads
-	// TODO: prove this -> Since Thread 3 has a higher priority than Thread 1, Thread 3 should be the Thread that wakes Thread 2.
-	thread[1] = createThread(thread1fun, thread1_stack, (void *)&_gp, 50, default_attr, default_option);
-	thread[2] = createThread(thread2fun, thread2_stack, (void *)&_gp, 50, default_attr, default_option);
-	thread[3] = createThread(thread3fun, thread3_stack, (void *)&_gp, 10, default_attr, default_option);
-
-	printf("Thread id's are: \nMain Thread: %d\nThread 1: %d\nThread 2: %d\nThread 3: %d\n", thread[0], thread[1], thread[2], thread[3]);
+	thread[1] = createThread(thread1fun, thread1_stack, (void *)&_gp, 10, 0x02000000, 0);
+	thread[2] = createThread(thread2fun, thread2_stack, (void *)&_gp, 50, 0x02000000, 0);
+	thread[3] = createThread(thread3fun, thread3_stack, (void *)&_gp, 50, 0x02000000, 0);
 
 	// Make sure they got created successfully
 	if(thread[1] < 0) printf("Failed to create thread 1.\n");
 	if(thread[2] < 0) printf("Failed to create thread 2.\n");
 	if(thread[3] < 0) printf("Failed to create thread 3.\n");
 
+	printf("Thread id's are: \nMain Thread: %d\nThread 1: %d\nThread 2: %d\nThread 3: %d\n", thread[0], thread[1], thread[2], thread[3]);
+
 	// Print the status of each thread.
 	printf("The status of each thread before being started is:\n");
 	updateThreadStatus(thread, thread_count);
 
 	// Start the threads
-	startThread(thread[1], NULL);
-	startThread(thread[2], NULL);
-	startThread(thread[3], NULL);
+	printf("Starting threads...:\n");
+	// NOTE: when starting threads, the order they are started is how they are scheduled, priority only matters when they get rescheduled.
+	startThread(thread[1], (void *) thread[0]);
+	startThread(thread[2], (void *) thread[0]);
+	startThread(thread[3], (void *) thread[0]);
 
-	// Print the status again.
-	printf("The status of each thread after being started is:\n");
-	updateThreadStatus(thread, thread_count);
+	int t1_notify = 0;
+	int t2_notify = 0;
+	int t3_notify = 0;
+
+	printf("Threads sleeping:\nThread 1: %d\nThread 2: %d\nThread 3: %d\n", t1_sleep, t2_sleep, t3_sleep);
+
+	printf("Rotating queue (50)...:\n");
+	//rotateThreadReadyQueue(50);
+
+	printf("Threads sleeping:\nThread 1: %d\nThread 2: %d\nThread 3: %d\n", t1_sleep, t2_sleep, t3_sleep);
 
 	// Use the main thread to keep track of completion of the other threads.
-	while(t1_done == 0 || t2_done == 0 || t3_done == 0) {
+	// NOTE: For some reason the loop never executes if there is no operation inside that can always be done, I assume the scheduler does this?
+	do {
 		if(t1_done == 1 && t1_notify == 0){
-			printf("Thread 1 has completed.\nI will now wake up Thread 2.\n");
-			//wakeupThread(thread[2]);
 			t1_notify = 1;
-		}
-		if(t2_done == 1 && t2_notify == 0) {
-			printf("Thread 2 has completed.\n");
-			t2_notify = 1;
-		}
-		if(t3_done == 1 && t3_notify == 0) {
-			printf("Thread 3 has completed.\nI will now wake up Thread 2.\n");
-			//wakeupThread(thread_2);
-			t3_notify = 1;
+			wakeupThread(thread[3]);
+			printf("Thread 1 has completed.\n");
+			printf("Threads completed:\nThread 1: %d\nThread 2: %d\nThread 3: %d\n", t1_done, t2_done, t3_done);
+			printf("Threads sleeping:\nThread 1: %d\nThread 2: %d\nThread 3: %d\n", t1_sleep, t2_sleep, t3_sleep);
 		}
 
-		printf("The status of each thread is:\n");
-		updateThreadStatus(thread, thread_count);
-		//sleepThread();
-		//rotateThreadReadyQueue(10); -> nothing???
-	}
+		if(t2_done == 1 && t2_notify == 0) {
+			t2_notify = 1;
+			printf("Thread 2 has completed.\n");
+			printf("Threads completed:\nThread 1: %d\nThread 2: %d\nThread 3: %d\n", t1_done, t2_done, t3_done);
+			printf("Threads sleeping:\nThread 1: %d\nThread 2: %d\nThread 3: %d\n", t1_sleep, t2_sleep, t3_sleep);
+		}
+
+		if(t3_done == 1 && t3_notify == 0) {
+			t3_notify = 1;
+			// wakeupThread(thread[2]); -> causes a crash...
+			printf("Thread 3 has completed.\n");
+			printf("Threads completed:\nThread 1: %d\nThread 2: %d\nThread 3: %d\n", t1_done, t2_done, t3_done);
+			printf("Threads sleeping:\nThread 1: %d\nThread 2: %d\nThread 3: %d\n", t1_sleep, t2_sleep, t3_sleep);
+		}
+	} while(t1_done == 0 || t2_done == 0 || t3_done == 0);
 
 	printf("The status of each thread after execution is:\n");
 	updateThreadStatus(thread, thread_count);
@@ -101,20 +113,28 @@ int main(int argc, char **argv) {
 }
 
 // WARNING: printf in multi-threading is a bad time.
-// I think what happens is the buffer gets over-written before it can complete.
+// I think what happens is the buffer gets over-written before it can complete / or actual concurrency is causing an issue.
 // Occasionally it will tell me the memory address cannot be written.
-static void thread1fun() {
+static void thread1fun(void * args) {
+	s32 * main_thread = (s32 *)(args);
 	t1_done = 1;
 	exitThread();
 }
 
-static void thread2fun() {
+static void thread2fun(void * args) {
+	t2_sleep = 1;
 	sleepThread();
+	t2_sleep = 0;
+	s32 * main_thread = (s32 *)(args);
 	t2_done = 1;
 	exitThread();
 }
 
-static void thread3fun() {
+static void thread3fun(void * args) {
+	t3_sleep = 1;
+	sleepThread();
+	t3_sleep = 0;
+	s32 * main_thread = (s32 *)(args);
 	t3_done = 1;
 	exitThread();
 }
