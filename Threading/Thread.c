@@ -11,13 +11,6 @@ s32 getCurrentThread() {
 	return GetThreadId();
 }
 
-int getThreadStatus(s32 t_id) {
-	ee_thread_status_t * status;
-	status = malloc(sizeof(ee_thread_status_t));
-	referThreadStatus(t_id, status);
-	return status->status;
-}
-
 s32 setThreadPriority(s32 t_id, s32 priority) {
 	return ChangeThreadPriority(t_id, priority);
 }
