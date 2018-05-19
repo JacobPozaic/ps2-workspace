@@ -22,15 +22,12 @@ int getThreadStackSize(s32 t_id) {
 	return status->stack_size;
 }
 
-char * getStackContents(s32 t_id) {
+char * getThreadStack(s32 t_id) {
 	ee_thread_status_t * status;
 	status = malloc(sizeof(ee_thread_status_t));
 	referThreadStatus(t_id, status);
 	return status->stack;
 }
-
-//----------------------------------------------------------------------------------------------------
-// Thread management functions
 
 s32 createThread(void * function, char stack[], void * gp_register, int priority, u32 attr, u32 option) {
 	ee_thread_t * t;
@@ -65,9 +62,6 @@ s32 terminateThread(s32 t_id) {
 	return TerminateThread(t_id);
 }
 
-//----------------------------------------------------------------------------------------------------
-// Thread scheduling functions
-
 s32 rotateThreadReadyQueue(s32 priority) {
 	return RotateThreadReadyQueue(priority);
 }
@@ -79,9 +73,6 @@ s32 releaseWaitThread(s32 t_id) {
 s32 referThreadStatus(s32 t_id, ee_thread_status_t *info) {
 	return ReferThreadStatus(t_id, info);
 }
-
-//----------------------------------------------------------------------------------------------------
-// Thread sleep functions
 
 s32 sleepThread() {
 	return SleepThread();
@@ -95,11 +86,6 @@ s32	cancelWakeupThread(s32 t_id) {
 	return CancelWakeupThread(t_id);
 }
 
-//----------------------------------------------------------------------------------------------------
-// Thread suspension functions
-// NOTE: Suspend is often deprecated (although not documented here) as it is prone to deadlocks
-// The nature of sleep in PS2's context doesn't seem to add any safer functionality though.
-
 s32	suspendThread(s32 t_id) {
 	return SuspendThread(t_id);
 }
@@ -107,7 +93,5 @@ s32	suspendThread(s32 t_id) {
 s32	resumeThread(s32 t_id) {
 	return ResumeThread(t_id);
 }
-
-//----------------------------------------------------------------------------------------------------
 
 #endif /* THREAD_C_ */
