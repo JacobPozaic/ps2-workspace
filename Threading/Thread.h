@@ -28,6 +28,7 @@
 //    u32 default_option = 0;
 
 //TODO: figure out what this is
+// It seems possible that the gp register is used for alarms.
 extern void * _gp;
 
 //----------------------------------------------------------------------------------------------------
