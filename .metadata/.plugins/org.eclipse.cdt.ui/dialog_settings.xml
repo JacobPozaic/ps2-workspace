@@ -21,6 +21,9 @@
 		<item value="false" key="testFileSelected"/>
 		<item value="true" key="stubSelected0"/>
 	</section>
+	<section name="OptionalMessageDialog.hide.">
+		<item value="0" key="askReindex.detail"/>
+	</section>
 	<section name="IncludeSysmbolsPropertyPage">
 		<item value="0" key="pageIndex"/>
 	</section>

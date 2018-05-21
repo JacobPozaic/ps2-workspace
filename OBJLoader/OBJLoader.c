@@ -68,32 +68,34 @@ int parseOBJ(char * file, mesh_data * mesh) {
 	fileXioClose(file_handle);
 
 	// Start parsing the file
-	char * prefix_buffer = (char *) malloc(7);			// 6 is the largest prefix length + 1 for null character space
-	int buffer_index = 0;								// The index to write to in the prefix buffer
-	int i = 0;											// The index in the data to read from
-	int EOL = 0;										// Flag is the end of the line was reached
-	while(i++ < obj->size) {							// For every byte in the data
+	char * prefix_buffer = (char *) malloc(7);				// 6 is the largest prefix length + 1 for null character space
+	int buffer_index = 0;									// The index to write to in the prefix buffer
+	int i = 0;												// The index in the data to read from
+	int EOL = 0;											// Flag is the end of the line was reached
+	int marker_location = 0;
+	while(i++ < obj->size) {								// For every byte in the data
+		marker_location = i;
 		char value = obj->data[i];							// Store the next byte to check for end of prefix
 		if(value == " ") {									// The prefix_buffer contains prefix for this line
-			prefix_buffer[buffer_index] = "\0";					// Instead of copying the space character just terminate the string.
+			prefix_buffer[buffer_index] = "\0";						// Instead of copying the space character just terminate the string.
 			// TODO: make sure this string matching works right
 			if(prefix_buffer == "v") 		mesh->vertex_count++;	// Increment the count for the type of data the line represents
 			else if(prefix_buffer == "vn")	mesh->normal_count++;
 			else if(prefix_buffer == "vt") 	mesh->texture_count++;
 			else if(prefix_buffer == "f")	mesh->face_count++;
 			//else if(prefix_buffer == "l") 	mesh->line_count++;	// Not implemented
-			else { /* Any other prefixes should be ignored as they are not implemented */ }
+			else { obj->data[i] = '\0'; }							// Sets a marker to know when to skip a line
 
-			while(i++ < obj->size) {							// Seek i to next line as we are only trying to count the number of each type of data here.
+			while(i++ < obj->size) {								// Seek i to next line as we are only trying to count the number of each type of data here.
 				if(obj->data[i] == "\n") {							// If newline is found then we know that we are looking at the next line
-					buffer_index = 0;									// Reset the buffer index so we write at the beginning again
-					break;												// Start reading the next line
+					buffer_index = 0;								// Reset the buffer index so we write at the beginning again
+					break;											// Start reading the next line
 				}
 			}
-		} else prefix_buffer[buffer_index++] = value;		// The prefix is not fully read yet, so copy the character into the prefix buffer and increment the buffer index
+		} else prefix_buffer[buffer_index++] = value;				// The prefix is not fully read yet, so copy the character into the prefix buffer and increment the buffer index
 	}
 
-	free(prefix_buffer);		// Free the prefix buffer, wont need it anymore
+	free(prefix_buffer);											// Free the prefix buffer, wont need it anymore
 
 	// Allocate space for the mesh data in mesh...
 	mesh->vertices 		 = (vertex *)	malloc(mesh->vertex_count  * sizeof(vertex));
@@ -101,53 +103,129 @@ int parseOBJ(char * file, mesh_data * mesh) {
 	mesh->faces			 = (face *)		malloc(mesh->face_count    * sizeof(face));
 	mesh->texture_coords = (texture *)	malloc(mesh->texture_count * sizeof(texture));
 
-	// Start copying data into mesh
-	char * line_buffer = (char *) malloc(64);	// Buffer may not contain entire contents of a single line
-
-	int EOL = 0; 				// End of line reached
-	int buff_of = 0;			// Buffer has overflowed
-	int data_index = 0;			// The index of data to look at
-
-	int vetex_index = 0, 		// The index of which vertex to write to mesh data
-		normal_index = 0,  		// The index of which normal to write to mesh data
-		face_index = 0,  		// The index of which face to write to mesh data
-		texture_index = 0; 		// The index of which texture to write to mesh data
-
-	// Start reading the actual values of each line into the mesh data
-	//TODO: don't read dropped lines, and don't increment line_index
+	int data_index = 0;
 	while(data_index < obj->size) {
-		int index = 0;
-		do {
-			char value = obj->data[data_index + index];
-			data_index++;
-			if(value == "\n") {
-				line_buffer[index] = "\0";
-				EOL = 1;
+		int line_length = 0;
+		while(data_index + line_length < obj->size)
+			if(obj->data[data_index + line_length++] == "\n")
 				break;
-			}
-			line_buffer[index] = value;
-			index++;
-		} while(index < sizeof(line_buffer));
 
-		if(!EOL) {
-			/* Process partial line_buffer */
-			// TODO: finish
-			buff_of = 1;
-
-		} else {
-			/* Process full line_buffer */
-			// TODO: finish
-			if(buff_of) {
-				// The buffer has overflowed, so this is continuing from previous buffer.
-				// TODO: step back to last space, find out what parameter it is on (param index?), then continue filling the data buffer from there.
-			}
-
-			buff_of = 0;
+		if(obj->data[data_index] == "\0") {
+			// Skip line
+			data_index += line_length;
+			continue;
 		}
+
+		char * line = malloc(line_length - 1);
+
+		int line_index = 0;
+		while(line_index < sizeof(line) - 1)
+			line[line_index] = obj->data[data_index + line_index++];
+		line[line_index] = '\0';
+
+		data_index += line_length; // Point data_index to the first character of next line.
+
+		// Parse line
+		line_index = 0;
+		int space_index = 0;
+		int parameter_count = 0;
+
+		void * data_container;
+		int data_type = -1;
+		int use_w = 0;
+		while(line_index < sizeof(line)) {
+			if(line[line_index] == ' ') {
+				line[line_index] = '\0';
+				char * param = line[space_index];
+
+				// Check for data types, otherwise its a value.
+				if(data_type == -1) {
+					if(param == "v") {
+						data_type = 0;
+						data_container = malloc(sizeof(vertex));
+					} else if(param == "vn") {
+						data_type = 1;
+						data_container = malloc(sizeof(V3));
+					} else if(param == "vt") {
+						data_type = 2;
+						data_container = malloc(sizeof(texture));
+					} else if(param == "f")	{
+						data_type = 3;
+						data_container = malloc(sizeof(face));
+					} else { /* SHOULD NEVER HAPPEN */ }
+				} else {
+					switch(data_type) {
+					case(0):
+						vertex * vc = (vertex *) data_container;
+						if(parameter_count == 4) {
+							float x = vc->data[0];
+							float y = vc->data[1];
+							float z = vc->data[2];
+							vc->data_w[0] = x;
+							vc->data_w[1] = y;
+							vc->data_w[2] = z;
+							vc->data_w[3] = parseFloat(param);
+							use_w = 1;
+						} else vc->data[parameter_count - 1] = parseFloat(param);
+						break;
+					case(1):
+						V3 * nc = (V3 *) data_container;
+						nc[parameter_count - 1] = parseFloat(param);
+						break;
+					case(2):
+						texture * tc = (texture *) data_container;
+						if(parameter_count == 3) {
+							float u = tc->data[0];
+							float v = tc->data[1];
+							tc->data_w[0] = u;
+							tc->data_w[1] = v;
+							tc->data_w[2] = parseFloat(param);
+							use_w = 1;
+						} else tc->data[parameter_count - 1] = parseFloat(param);
+						break;
+					case(3):
+						face * fc = (face *) data_container;
+						//TODO: parse face data...
+						break;
+					}
+				}
+
+				free(param);
+				space_index = line_index + 1;
+				parameter_count++;
+			}
+		}
+
+		// Copy the data into mesh
+		switch(data_type) { // TODO: data loss when the container is freed, use memcpy
+		case(0):
+			vertex * vc = (vertex *) data_container;
+			if(use_w) mesh->vertices = vc->data_w;
+			else mesh->vertices = vc->data;
+			break;
+		case(1):
+			V3 * nc = (V3 *) data_container;
+			mesh->normals = nc;
+			break;
+		case(2):
+			texture * tc = (texture *) data_container;
+			if(use_w) mesh->texture_coords = tc->data_w;
+			else mesh->texture_coords = tc->data;
+			break;
+		case(2):
+			face * fc = (face *) data_container;
+			mesh->faces = fc;
+			break;
+		}
+
+		free(line);
+		free(data_container);
+		use_w = 0;
+		data_type = -1;
+		line_index++;
 	}
 
 	// Clear buffers
-	free(line_buffer);	// Free the line buffer, as we are done parsing
 	free(obj->data);	// Free the obj data, as we are done parsing
 	return 0;
 }
