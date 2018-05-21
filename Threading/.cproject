@@ -34,7 +34,7 @@
 								<inputType id="org.eclipse.cdt.build.core.settings.holder.inType.410174418" languageId="org.eclipse.cdt.core.g++" languageName="GNU C++" sourceContentType="org.eclipse.cdt.core.cxxSource,org.eclipse.cdt.core.cxxHeader" superClass="org.eclipse.cdt.build.core.settings.holder.inType"/>
 							</tool>
 							<tool id="org.eclipse.cdt.build.core.settings.holder.1779100241" name="GNU C" superClass="org.eclipse.cdt.build.core.settings.holder">
-								<option id="org.eclipse.cdt.build.core.settings.holder.incpaths.756124330" superClass="org.eclipse.cdt.build.core.settings.holder.incpaths" valueType="includePath">
+								<option id="org.eclipse.cdt.build.core.settings.holder.incpaths.756124330" name="Include Paths" superClass="org.eclipse.cdt.build.core.settings.holder.incpaths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;E:\PS2\dev\gsKit\gsKit\include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;E:\PS2\dev\ps2sdk\ps2sdk\common\include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;E:\PS2\dev\ps2sdk\ps2sdk\ee\include&quot;"/>
