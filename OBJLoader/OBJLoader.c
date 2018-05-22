@@ -33,10 +33,18 @@
 // TODO: obj pre-processor can decrease load speed.
 // TODO: or just create a custom mesh binary file
 
+// If debug printing should be done, define this:
+#define DEBUG_OBJL
+
 #include <tamtypes.h>
 #include <malloc.h>
 #include <stdio.h>
-#include <fileXio_rpc.h>
+#include <string.h>
+#include <sifrpc.h>
+#include "loadfile.h"
+#include <fileio.h>
+
+//TODO: Sioman
 
 #include <OBJLoader.h>
 
@@ -53,31 +61,39 @@
  *    -2 -> Couldn't write allocate space for the file data
  */
 int parseOBJ(char * file, mesh_data * mesh) {
-	// Read the obj file
+#ifdef DEBUG_OBJL
+	printf("Loading OBJ file: %s\n", file);
+#endif
+	SifInitRpc(0);
+	SifLoadModule("rom0:XSIO2MAN", 0, NULL);
+	fioInit();
 	obj_file * obj = malloc(sizeof(obj_file));
-	int file_handle = fileXioOpen(file, O_RDONLY, 0);
+	int file_handle = fioOpen(file, O_RDONLY);
 	if(file_handle == -1) return -1;
 
-	obj->size = fileXioLseek(file_handle, 0, SEEK_END);
-	fileXioLseek(file_handle, 0, SEEK_SET);
+	obj->size = fioLseek(file_handle, 0, SEEK_END);
+	fioLseek(file_handle, 0, SEEK_SET);
 
 	obj->data = (u8 *) malloc(obj->size);
 	if(obj->data == NULL) return -2;
 
-	fileXioRead(file_handle, obj->data, obj->size);
-	fileXioClose(file_handle);
+	fioRead(file_handle, obj->data, obj->size);
+	fioClose(file_handle);
+
+#ifdef DEBUG_OBJL
+	printf("The file has been read:\nsize: %d\n", obj->size);
+#endif
 
 	// Start parsing the file
 	char * prefix_buffer = (char *) malloc(7);				// 6 is the largest prefix length + 1 for null character space
 	int buffer_index = 0;									// The index to write to in the prefix buffer
 	int i = 0;												// The index in the data to read from
-	int EOL = 0;											// Flag is the end of the line was reached
 	int marker_location = 0;
 	while(i++ < obj->size) {								// For every byte in the data
 		marker_location = i;
 		char value = obj->data[i];							// Store the next byte to check for end of prefix
-		if(value == " ") {									// The prefix_buffer contains prefix for this line
-			prefix_buffer[buffer_index] = "\0";						// Instead of copying the space character just terminate the string.
+		if(value == ' ') {									// The prefix_buffer contains prefix for this line
+			prefix_buffer[buffer_index] = '\0';						// Instead of copying the space character just terminate the string.
 			// TODO: make sure this string matching works right
 			if(prefix_buffer == "v") 		mesh->vertex_count++;	// Increment the count for the type of data the line represents
 			else if(prefix_buffer == "vn")	mesh->normal_count++;
@@ -87,7 +103,7 @@ int parseOBJ(char * file, mesh_data * mesh) {
 			else { obj->data[i] = '\0'; }							// Sets a marker to know when to skip a line
 
 			while(i++ < obj->size) {								// Seek i to next line as we are only trying to count the number of each type of data here.
-				if(obj->data[i] == "\n") {							// If newline is found then we know that we are looking at the next line
+				if(obj->data[i] == '\n') {							// If newline is found then we know that we are looking at the next line
 					buffer_index = 0;								// Reset the buffer index so we write at the beginning again
 					break;											// Start reading the next line
 				}
@@ -107,10 +123,10 @@ int parseOBJ(char * file, mesh_data * mesh) {
 	while(data_index < obj->size) {
 		int line_length = 0;
 		while(data_index + line_length < obj->size)
-			if(obj->data[data_index + line_length++] == "\n")
+			if(obj->data[data_index + line_length++] == '\n')
 				break;
 
-		if(obj->data[data_index] == "\0") {
+		if(obj->data[data_index] == '\0') {
 			// Skip line
 			data_index += line_length;
 			continue;
@@ -119,8 +135,10 @@ int parseOBJ(char * file, mesh_data * mesh) {
 		char * line = malloc(line_length - 1);
 
 		int line_index = 0;
-		while(line_index < sizeof(line) - 1)
-			line[line_index] = obj->data[data_index + line_index++];
+		while(line_index < sizeof(line) - 1) {
+			line[line_index] = obj->data[data_index + line_index];
+			line_index++;
+		}
 		line[line_index] = '\0';
 
 		data_index += line_length; // Point data_index to the first character of next line.
@@ -130,61 +148,53 @@ int parseOBJ(char * file, mesh_data * mesh) {
 		int space_index = 0;
 		int parameter_count = 0;
 
-		void * data_container;
+		data_container * d = malloc(sizeof(data_container));
 		int data_type = -1;
 		int use_w = 0;
 		while(line_index < sizeof(line)) {
 			if(line[line_index] == ' ') {
 				line[line_index] = '\0';
-				char * param = line[space_index];
+				char * param = &line[space_index];
 
 				// Check for data types, otherwise its a value.
 				if(data_type == -1) {
 					if(param == "v") {
 						data_type = 0;
-						data_container = malloc(sizeof(vertex));
 					} else if(param == "vn") {
 						data_type = 1;
-						data_container = malloc(sizeof(V3));
 					} else if(param == "vt") {
 						data_type = 2;
-						data_container = malloc(sizeof(texture));
 					} else if(param == "f")	{
 						data_type = 3;
-						data_container = malloc(sizeof(face));
 					} else { /* SHOULD NEVER HAPPEN */ }
 				} else {
 					switch(data_type) {
 					case(0):
-						vertex * vc = (vertex *) data_container;
 						if(parameter_count == 4) {
-							float x = vc->data[0];
-							float y = vc->data[1];
-							float z = vc->data[2];
-							vc->data_w[0] = x;
-							vc->data_w[1] = y;
-							vc->data_w[2] = z;
-							vc->data_w[3] = parseFloat(param);
+							float x = d->v->data[0];
+							float y = d->v->data[1];
+							float z = d->v->data[2];
+							d->v->data_w[0] = x;
+							d->v->data_w[1] = y;
+							d->v->data_w[2] = z;
+							d->v->data_w[3] = parseFloat(param);
 							use_w = 1;
-						} else vc->data[parameter_count - 1] = parseFloat(param);
+						} else d->v->data[parameter_count - 1] = parseFloat(param);
 						break;
 					case(1):
-						V3 * nc = (V3 *) data_container;
-						nc[parameter_count - 1] = parseFloat(param);
+						*(d->n[parameter_count - 1]) = parseFloat(param);
 						break;
 					case(2):
-						texture * tc = (texture *) data_container;
 						if(parameter_count == 3) {
-							float u = tc->data[0];
-							float v = tc->data[1];
-							tc->data_w[0] = u;
-							tc->data_w[1] = v;
-							tc->data_w[2] = parseFloat(param);
+							float u = d->t->data[0];
+							float v = d->t->data[1];
+							d->t->data_w[0] = u;
+							d->t->data_w[1] = v;
+							d->t->data_w[2] = parseFloat(param);
 							use_w = 1;
-						} else tc->data[parameter_count - 1] = parseFloat(param);
+						} else d->t->data[parameter_count - 1] = parseFloat(param);
 						break;
 					case(3):
-						face * fc = (face *) data_container;
 						//TODO: parse face data...
 						break;
 					}
@@ -196,36 +206,47 @@ int parseOBJ(char * file, mesh_data * mesh) {
 			}
 		}
 
-		// Copy the data into mesh
-		switch(data_type) { // TODO: data loss when the container is freed, use memcpy
+		// Copy the parsed data into mesh_data
+		switch(data_type) {
 		case(0):
-			vertex * vc = (vertex *) data_container;
-			if(use_w) mesh->vertices = vc->data_w;
-			else mesh->vertices = vc->data;
+			if(use_w) {
+				mesh->vertices = malloc(sizeof(V4));
+				memcpy(mesh->vertices, d->v->data_w, sizeof(d->v->data_w));
+			} else {
+				mesh->vertices = malloc(sizeof(V3));
+				memcpy(mesh->vertices, d->v->data, sizeof(d->v->data));
+			}
 			break;
 		case(1):
-			V3 * nc = (V3 *) data_container;
-			mesh->normals = nc;
+			memcpy(mesh->normals, d->n, sizeof(d->n));
 			break;
 		case(2):
-			texture * tc = (texture *) data_container;
-			if(use_w) mesh->texture_coords = tc->data_w;
-			else mesh->texture_coords = tc->data;
+			if(use_w) {
+				mesh->texture_coords = malloc(sizeof(V3));
+				memcpy(mesh->texture_coords, d->t->data_w, sizeof(d->t->data_w));
+			} else {
+				mesh->texture_coords = malloc(sizeof(V2));
+				memcpy(mesh->texture_coords, d->t->data, sizeof(d->t->data));
+			}
 			break;
-		case(2):
-			face * fc = (face *) data_container;
-			mesh->faces = fc;
+		case(3):
+			mesh->faces = malloc(sizeof(face));
+			memcpy(mesh->faces, d->f, sizeof(d->f));
 			break;
 		}
 
 		free(line);
-		free(data_container);
+		free(d);
 		use_w = 0;
 		data_type = -1;
 		line_index++;
 	}
 
 	// Clear buffers
-	free(obj->data);	// Free the obj data, as we are done parsing
+	free(obj->data);	// Free the obj data, as we are done parsing (make sure freeing this doesnt mess with meshdata)
 	return 0;
+}
+
+float parseFloat(char * string_value) {
+	return 1.0f;
 }

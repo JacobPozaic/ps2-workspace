@@ -8,9 +8,9 @@
 #ifndef OBJLOADER_H_
 #define OBJLOADER_H_
 
-typedef float V4[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-typedef float V3[] = { 0.0f, 0.0f, 0.0f };
-typedef float V2[] = { 0.0f, 0.0f };
+typedef float V4[4];
+typedef float V3[3];
+typedef float V2[2];
 
 typedef union {
 	V4 data_w;
@@ -30,7 +30,7 @@ typedef struct {
 
 typedef struct {
 	int component_count;
-	face_component face_components[];
+	face_component * face_components;
 } face;
 
 typedef struct {
@@ -39,20 +39,28 @@ typedef struct {
 } obj_file;
 
 typedef struct {
-	int vertex_count = 0;
-	vertex vertices[];
+	int vertex_count;
+	vertex * vertices;
 
-	int normal_count = 0;
-	V3 normals[];
+	int normal_count;
+	V3 * normals;
 
-	int face_count = 0;
-	face faces[];
+	int face_count;
+	face * faces;
 
-	int texture_count = 0;
-	texture texture_coords[];
+	int texture_count;
+	texture * texture_coords;
 } mesh_data;
+
+typedef union {
+	vertex * v;
+	V3 * n;
+	texture * t;
+	face * f;
+} data_container;
 
 int parseOBJ(char * file, mesh_data * mesh);
 obj_file * openOBJ(char * file);
+float parseFloat(char * string_value);
 
 #endif /* OBJLOADER_H_ */
