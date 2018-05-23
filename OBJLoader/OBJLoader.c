@@ -59,59 +59,82 @@
  *     0 -> Successfully read file
  *    -1 -> Couldn't open file
  *    -2 -> Couldn't write allocate space for the file data
+ *    -3 -> Couldn't allocate enough memory for pre-parser (literally 7 bytes..)
+ *    -4 -> Couldn't allocate enough memory for mesh data
  */
 int parseOBJ(char * file, mesh_data * mesh) {
-#ifdef DEBUG_OBJL
-	printf("Loading OBJ file: %s\n", file);
-#endif
 	SifInitRpc(0);
 	SifLoadModule("rom0:XSIO2MAN", 0, NULL);
 	fioInit();
-	obj_file * obj = malloc(sizeof(obj_file));
+
+	#ifdef DEBUG_OBJL
+	printf("Loading OBJ file: %s\n", file);
+	#endif
+
 	int file_handle = fioOpen(file, O_RDONLY);
 	if(file_handle == -1) return -1;
 
-	obj->size = fioLseek(file_handle, 0, SEEK_END);
+	int data_size = fioLseek(file_handle, 0, SEEK_END);
 	fioLseek(file_handle, 0, SEEK_SET);
 
-	obj->data = (u8 *) malloc(obj->size);
-	if(obj->data == NULL) return -2;
+	u8 * data = (u8 *) malloc(data_size);
+	if(data == NULL) return -2;
 
-	fioRead(file_handle, obj->data, obj->size);
+	fioRead(file_handle, data, data_size);
 	fioClose(file_handle);
 
-#ifdef DEBUG_OBJL
-	printf("The file has been read:\nsize: %d\n", obj->size);
-#endif
+	#ifdef DEBUG_OBJL
+	printf("The file has been read:\nsize: %d\n", data_size);
+	#endif
 
 	// Start parsing the file
-	char * prefix_buffer = (char *) malloc(7);				// 6 is the largest prefix length + 1 for null character space
-	int buffer_index = 0;									// The index to write to in the prefix buffer
-	int i = 0;												// The index in the data to read from
-	int marker_location = 0;
-	while(i++ < obj->size) {								// For every byte in the data
-		marker_location = i;
-		char value = obj->data[i];							// Store the next byte to check for end of prefix
-		if(value == ' ') {									// The prefix_buffer contains prefix for this line
-			prefix_buffer[buffer_index] = '\0';						// Instead of copying the space character just terminate the string.
-			// TODO: make sure this string matching works right
-			if(prefix_buffer == "v") 		mesh->vertex_count++;	// Increment the count for the type of data the line represents
-			else if(prefix_buffer == "vn")	mesh->normal_count++;
-			else if(prefix_buffer == "vt") 	mesh->texture_count++;
-			else if(prefix_buffer == "f")	mesh->face_count++;
-			//else if(prefix_buffer == "l") 	mesh->line_count++;	// Not implemented
-			else { obj->data[i] = '\0'; }							// Sets a marker to know when to skip a line
+	char * prefix_buffer = (char *) malloc(7);			// 6 is the largest prefix length + 1 for null character space
+	if(prefix_buffer == NULL) return -3;
 
-			while(i++ < obj->size) {								// Seek i to next line as we are only trying to count the number of each type of data here.
-				if(obj->data[i] == '\n') {							// If newline is found then we know that we are looking at the next line
-					buffer_index = 0;								// Reset the buffer index so we write at the beginning again
-					break;											// Start reading the next line
+	int buffer_index = 0;								// The index to write to in the prefix buffer
+	int i = 0;											// The index in the data to read from
+	int skip_line = 0;									// If the line has been skipped
+	int skip_index = 0;									// Marks the beginning of lines that should not be parsed
+	while(i++ < data_size) {							// For every byte in the data
+		char value = data[i];							// Store the next byte to check for end of prefix
+		if(value == ' ') {								// The prefix_buffer contains prefix for this line
+			prefix_buffer[buffer_index] = '\0';			// Instead of copying the space character just terminate the string.
+
+			#ifdef DEBUG_OBJL
+			printf("Prefix buffer contains: %s\n", prefix_buffer);
+			#endif
+
+			// Increment the count for the type of data the line represents
+			if(!strcmp(prefix_buffer, "v")) 		mesh->vertex_count++;
+			else if(!strcmp(prefix_buffer, "vn"))	mesh->normal_count++;
+			else if(!strcmp(prefix_buffer, "vt")) 	mesh->texture_count++;
+			else if(!strcmp(prefix_buffer, "f"))	mesh->face_count++;
+			//else if(!strcmp(prefix_buffer, "l")) 	mesh->line_count++;		// Not implemented
+			else {
+				skip_line = 1;
+				data[skip_index] = '\0';				// Sets the first character of the line to null, so when parsing the line can be skipped skip a line
+			}
+
+			buffer_index = 0;												// Reset the buffer index so we write at the beginning again
+			while(i++ < data_size) {										// Seek i to next line as we are only trying to count the number of each type of data here.
+				if(data[i] == '\n') {										// If newline is found then we know that we are looking at the next line
+					if(skip_line) {
+						int * skip_value = (int *) &data[skip_index + 1];
+						*skip_value = i + 1;								// Set the next character after the null to the index of the next line, this is to make skipline O(1) instead of O(n)
+					}
+					skip_index = i + 1;										// Update the location of the skip_line index
+					skip_line = 0;											// Reset line skip flag
+					break;													// Start reading the next line
 				}
 			}
-		} else prefix_buffer[buffer_index++] = value;				// The prefix is not fully read yet, so copy the character into the prefix buffer and increment the buffer index
+		} else prefix_buffer[buffer_index++] = value;	// The prefix is not fully read yet, so copy the character into the prefix buffer and increment the buffer index
 	}
 
-	free(prefix_buffer);											// Free the prefix buffer, wont need it anymore
+	free(prefix_buffer);								// Free the prefix buffer, wont need it anymore
+
+	#ifdef DEBUG_OBJL
+	printf("Done pre-parsing OBJ file... data counts are:\nVertices: %d\nNormals: %d\nTexture: %d\nFaces: %d\n", mesh->vertex_count, mesh->normal_count, mesh->texture_count, mesh->face_count);
+	#endif
 
 	// Allocate space for the mesh data in mesh...
 	mesh->vertices 		 = (vertex *)	malloc(mesh->vertex_count  * sizeof(vertex));
@@ -119,54 +142,62 @@ int parseOBJ(char * file, mesh_data * mesh) {
 	mesh->faces			 = (face *)		malloc(mesh->face_count    * sizeof(face));
 	mesh->texture_coords = (texture *)	malloc(mesh->texture_count * sizeof(texture));
 
-	int data_index = 0;
-	while(data_index < obj->size) {
-		int line_length = 0;
-		while(data_index + line_length < obj->size)
-			if(obj->data[data_index + line_length++] == '\n')
-				break;
+	if(mesh->vertices == NULL || mesh->normals == NULL || mesh->faces == NULL || mesh->texture_coords == NULL) return -4;
 
-		if(obj->data[data_index] == '\0') {
-			// Skip line
-			data_index += line_length;
-			continue;
+	#ifdef DEBUG_OBJL
+	printf("Space has been allocated for the mesh data...\nBeginning to parse...\n");
+	#endif
+
+	int data_index = 0;										// Index in memory the line is being read from
+	while(data_index < data_size) {							// Read through the entire obj file from memory, line by line
+		if(data[data_index] == '\0') {						// If the line should be skipped
+			int * jumpto = (int *) &data[data_index + 1];
+			data_index = *jumpto;							// Increment to the index of the next line
+
+			#ifdef DEBUG_OBJL
+			printf("A line has been skipped, jumping to: %d\n", data_index + 1);
+			#endif
+
+			continue;										// Start parsing the next line
 		}
 
-		char * line = malloc(line_length - 1);
+		char * line = &data[data_index];
+		int line_length = 0;								// Determines the length of the line that will be read
+		while(data_index + line_length < data_size)
+			if(data[data_index + line_length] == '\n') break;
+			else line_length++;
+		line[line_length] = '\0';							// Terminate the line
 
-		int line_index = 0;
-		while(line_index < sizeof(line) - 1) {
-			line[line_index] = obj->data[data_index + line_index];
-			line_index++;
-		}
-		line[line_index] = '\0';
+		#ifdef DEBUG_OBJL
+		printf("A line has been read: %s\n", line);
+		#endif
 
-		data_index += line_length; // Point data_index to the first character of next line.
+		data_index += line_length + 1; // Point data_index to the first character of next line.
 
 		// Parse line
-		line_index = 0;
+		int line_index = 0;
 		int space_index = 0;
 		int parameter_count = 0;
 
 		data_container * d = malloc(sizeof(data_container));
 		int data_type = -1;
 		int use_w = 0;
-		while(line_index < sizeof(line)) {
+		while(line_index++ < line_length) {
 			if(line[line_index] == ' ') {
 				line[line_index] = '\0';
 				char * param = &line[space_index];
 
+				#ifdef DEBUG_OBJL
+				printf("A Parameter has been read: %s\n", param);
+				#endif
+
 				// Check for data types, otherwise its a value.
 				if(data_type == -1) {
-					if(param == "v") {
-						data_type = 0;
-					} else if(param == "vn") {
-						data_type = 1;
-					} else if(param == "vt") {
-						data_type = 2;
-					} else if(param == "f")	{
-						data_type = 3;
-					} else { /* SHOULD NEVER HAPPEN */ }
+					if(!strcmp(prefix_buffer, "v"))			data_type = 0;
+					else if(!strcmp(prefix_buffer, "vn"))	data_type = 1;
+					else if(!strcmp(prefix_buffer, "vt"))	data_type = 2;
+					else if(!strcmp(prefix_buffer, "f"))	data_type = 3;
+					else { /* SHOULD NEVER HAPPEN */ }
 				} else {
 					switch(data_type) {
 					case(0):
@@ -177,12 +208,12 @@ int parseOBJ(char * file, mesh_data * mesh) {
 							d->v->data_w[0] = x;
 							d->v->data_w[1] = y;
 							d->v->data_w[2] = z;
-							d->v->data_w[3] = parseFloat(param);
+							d->v->data_w[3] = (float) strtod(param, NULL);
 							use_w = 1;
-						} else d->v->data[parameter_count - 1] = parseFloat(param);
+						} else d->v->data[parameter_count - 1] = (float) strtod(param, NULL);
 						break;
 					case(1):
-						*(d->n[parameter_count - 1]) = parseFloat(param);
+						*(d->n[parameter_count - 1]) = (float) strtod(param, NULL);
 						break;
 					case(2):
 						if(parameter_count == 3) {
@@ -190,9 +221,9 @@ int parseOBJ(char * file, mesh_data * mesh) {
 							float v = d->t->data[1];
 							d->t->data_w[0] = u;
 							d->t->data_w[1] = v;
-							d->t->data_w[2] = parseFloat(param);
+							d->t->data_w[2] = (float) strtod(param, NULL);
 							use_w = 1;
-						} else d->t->data[parameter_count - 1] = parseFloat(param);
+						} else d->t->data[parameter_count - 1] = (float) strtod(param, NULL);
 						break;
 					case(3):
 						//TODO: parse face data...
@@ -235,18 +266,12 @@ int parseOBJ(char * file, mesh_data * mesh) {
 			break;
 		}
 
-		free(line);
 		free(d);
 		use_w = 0;
 		data_type = -1;
 		line_index++;
 	}
 
-	// Clear buffers
-	free(obj->data);	// Free the obj data, as we are done parsing (make sure freeing this doesnt mess with meshdata)
+	free(data);	// Free the data, as we are done parsing
 	return 0;
-}
-
-float parseFloat(char * string_value) {
-	return 1.0f;
 }

@@ -34,11 +34,6 @@ typedef struct {
 } face;
 
 typedef struct {
-	int size;
-	u8 * data;
-} obj_file;
-
-typedef struct {
 	int vertex_count;
 	vertex * vertices;
 
@@ -60,7 +55,6 @@ typedef union {
 } data_container;
 
 int parseOBJ(char * file, mesh_data * mesh);
-obj_file * openOBJ(char * file);
 float parseFloat(char * string_value);
 
 #endif /* OBJLOADER_H_ */
