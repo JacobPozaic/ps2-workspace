@@ -23,10 +23,6 @@ static void find_controllers();
 void initController();
 void handleInput(control_map con);
 
-// TODO: implement these in a way that a game can activate them
-void padStartAct(int port, int act, int speed);
-void padStopAct(int port, int act);
-
 #endif
 
 /* CONTROLLER_H_ */

@@ -55,6 +55,5 @@ typedef union {
 } data_container;
 
 int parseOBJ(char * file, mesh_data * mesh);
-float parseFloat(char * string_value);
 
 #endif /* OBJLOADER_H_ */

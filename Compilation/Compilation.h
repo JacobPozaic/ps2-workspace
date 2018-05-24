@@ -1,8 +1,5 @@
-// The mesh to load
-#include "mesh_data.c"
-
-#ifndef DEMO1_H_
-#define DEMO1_H_
+#ifndef COMPILATION_H_
+#define COMPILATION_H_
 
 VECTOR object_position = { 0.00f, 0.00f, 0.00f, 1.00f };
 VECTOR object_rotation = { 0.00f, 0.00f, 0.00f, 1.00f };
@@ -14,7 +11,7 @@ int follow = 0;
 VECTOR follow_offset = { 0.00f, 0.00f, 0.00f };
 
 // Stores what functions to map to each controller key
-control_map con;
+//control_map con;
 
 /**
  * Initializes the Graphics Synthesizer
@@ -49,4 +46,4 @@ void moveDown();
  */
 void toggleFollow();
 
-#endif /* DEMO1_H_ */
+#endif

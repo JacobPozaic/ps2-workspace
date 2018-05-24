@@ -6,15 +6,24 @@
 # Licenced under Academic Free License version 2.0
 # Review ps2sdk README & LICENSE files for further details.
 
-EE_BIN = Threading.elf
-EE_OBJS = Threading.o
-EE_LIBS =
+EE_BIN = Controller.elf
+EE_OBJS = Controller.o
+EE_LIBS = -lpadx
 
-all: $(EE_BIN) -IThread.h -IThread.c
+all: $(EE_BIN) sio2man.irx mtapman.irx padman.irx
 	$(EE_STRIP) --strip-all $(EE_BIN)
 
 clean:
-	rm -f $(EE_BIN) $(EE_OBJS)
+	rm -f $(EE_BIN) $(EE_OBJS) padman.irx mtapman.irx sio2man.irx
+	
+sio2man.irx:
+	cp $(PS2SDK)/iop/irx/sio2man.irx $@
+	
+mtapman.irx:
+	cp $(PS2SDK)/iop/irx/mtapman.irx $@
+
+padman.irx:
+	cp $(PS2SDK)/iop/irx/padman.irx $@
 
 run: $(EE_BIN)
 	ps2client execee host:$(EE_BIN)

@@ -6,18 +6,25 @@
 # Licenced under Academic Free License version 2.0
 # Review ps2sdk README & LICENSE files for further details.
 
-EE_BIN = Threading.elf
-EE_OBJS = Threading.o
-EE_LIBS =
+EE_BIN = Compilation.elf
+EE_OBJS = Compilation.o
+EE_LIBS = -ldraw -lgraph -lmath3d -lmf -lpacket -ldma
 
-all: $(EE_BIN)
+OUT_DIR = ./bin/
+MK_DIR = mkdir -p $(OUT_DIR)
+
+all: 
+	$(MK_DIR)
+	+$(MAKE) $(EE_BIN)
 	$(EE_STRIP) --strip-all $(EE_BIN)
+	mv $(EE_BIN) $(OUT_DIR)
+	mv $(EE_OBJS) $(OUT_DIR)
 
 clean:
-	rm -f $(EE_BIN) $(EE_OBJS)
+	rm -Rf $(OUT_DIR)$(EE_BIN) $(OUT_DIR)$(EE_OBJS)
 
-run: $(EE_BIN)
-	ps2client execee host:$(EE_BIN)
+run: $(OUT_DIR)$(EE_BIN)
+	ps2client execee host:$(OUT_DIR)$(EE_BIN)
 
 reset:
 	ps2client reset

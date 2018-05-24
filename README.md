@@ -12,9 +12,9 @@ This project is a library I am developing to load wavefront obj files from any s
 
 I plan to add the ability to select what properties of the OBJ should not be included to save on memory and parsing time.  I also plan to make an obj pre-processor that will strip comments and features not supported by PS2, and might go sofar as to generate custom binary mesh file types that can be parsed much faster and more effeciently.
 
-## Demo1:
+## Compilation:
 
-This project is an experiment with the rendering pipeline built into PS2SDK, and the integration of IOP modules.  As the project stands it shows a cube rotating and bouncing around in 3D space, the d-pad on the controler can move the camera's position to a moderate degree, the camera can also be set to follow or stop following the cube by pressing the cross button.
+This project is an experiment with the rendering pipeline built into PS2SDK, and the integration of IOP modules.  As the project stands it shows a cube rotating and bouncing around in 3D space, the d-pad on the controler can move the camera's position to a moderate degree, the camera can also be set to follow or stop following the cube by pressing the cross button.  In this project I am trying to make use of other projects I have been working on.
 
 I plan to create an asyncronous event system (using the threading library I am working on) to handle controller input.  I would also like to increase the complexity of the rendered envitoment, and will be creating a character that can navigate more fluidly with conventional camera control.  Long term I plan to extend the project into a basic game.
 	
