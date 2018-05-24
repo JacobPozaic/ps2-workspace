@@ -1,7 +1,6 @@
-Build Tools
-RemoteSystemsTempFiles
-Template
-PS2SDK
+Build Tools/
+RemoteSystemsTempFiles/
+Template/
 
 .metadata
 bin/
